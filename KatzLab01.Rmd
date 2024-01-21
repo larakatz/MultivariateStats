@@ -1,0 +1,154 @@
+---
+title: 'Lab1: RMarkdown'
+author: "Lara Katz"
+date: "2024-01-19"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(terra)
+library(ggplot2)
+library(corrplot)
+```
+
+
+# Read in multivariate data set
+
+
+```{r}
+bds <- read.csv("./Data/Katz_BDS_data.csv")
+bds <- bds[,-1] # remove first column
+```
+
+
+# Use the head function to show the first few rows of the dataset
+
+
+```{r}
+head(bds)
+```
+
+
+# Bulleted list describing the columns of the dataset
+
+
+Columns of dataset:
+
+* **pab** = Presence/absence/pseudoabsence data (binary)
+
+* **catchment**: Catchment position (stream size or size of largest input stream into lake/pond) (categorical data)
+
+* **clay**: Mean proportion clay composition of soil within point's HUC12 subwatershed (continuous data) 
+
+* **coast**: Distance from the coastline in km (continuous data)
+
+* **elev**: Mean elevation (m) within point's HUC12 subwatershed (continuous data)
+
+* **lith**: Lithology at point (categorical data)
+
+* **marine**: Whether or not point is within the historic marine limit (binary data)
+
+* **ph**: Mean pH of soil within point's HUC12 subwatershed (continuous data) 
+
+* Columns **X01_water** through **X29_AcAp_AlpineTundra**: Percent cover of the LANDFIRE landcover type within the point's HUC12 subwatershed (continuous data)
+  + **X01_water**: Open Water
+  + **X02_Barren**: Barren-Rock/Sand/Clay
+  + **X03_LAc_NHardwd**: Laurentian-Acadian Northern Hardwoods Forest
+  + **X05_NAtl_CoastPlain_Hardwd**: Northern Atlantic Coastal Plain Hardwood Forest
+  + **X07_LAc_NPine.Oak**: Laurentian-Acadian Northern Pine(-Oak) Forest
+  + **X08_LAc_Pine.Hemlock.Hardwd**: Laurentian-Acadian Pine-Hemlock-Hardwood Forest
+  + **X09_CAp_Dry_Oak.Pine**: Central Appalachian Dry Oak-Pine Forest
+  + **X10_Ap_Hemlock.N_Hardwood**: Appalachian (Hemlock-)Northern Hardwood Forest
+  + **X11_Ac_Low.Elev_Spruce.Fir.Hardwood**: Acadian Low-Elevation Spruce-Fir-Hardwood Forest
+  + **X12_AcAp_Montane_Spruce.Fir**: Acadian-Appalachian Montane Spruce-Fir Forest
+  + **X13_CentAp_Pine.Oak_Rocky_Wd**:	Central Appalachian Pine-Oak Rocky Woodland
+  + **X14_NAtl_Coast_Plain_Maritime**: Northern Atlantic Coastal Plain Maritime Forest
+  + **X15_NAtl_Coast_Plain_Dune**: Northern Atlantic Coastal Plain Dune and Swale
+  + **X16_CentIntAp_FloodplainSys**: Central Interior and Appalachian Floodplain Systems
+  + **X17_CentIntAp_RiparianSys**: Central Interior and Appalachian Riparian Systems
+  + **X18_LAc_FloodplainSys**: Laurentian-Acadian Floodplain Systems
+  + **X19_Bor_Acidic_PeatSys**: Boreal Acidic Peatland Systems
+  + **X20_CentIntAp_SwampSys**: Central Interior and Appalachian Swamp Systems
+  + **X21_GulfAtl_CoastPlain_SwampSys**: Gulf and Atlantic Coastal Plain Swamp Systems
+  + **X22_GulfAtl_CoastPlain_TMarshSys**:	Gulf and Atlantic Coastal Plain Tidal Marsh Systems	
+  + **X23_LAc_Shrub.Herb_WetlSys**: Laurentian-Acadian Shrub-Herbaceous Wetland Systems
+  + **X24_NCentInt_Wet_Flatwd**: North-Central Interior Wet Flatwoods
+  + **X25_LAc_SwampSys**:	Laurentian-Acadian Swamp Systems
+  + **X26_NeInt_PineBarrens**: Northeastern Interior Pine Barrens
+  + **X27_AcAp_WdHeath.Krummholz**: Acadian-Appalachian Subalpine Woodland and Heath-Krummholz
+  + **X28_Bor_JackPine.BlackSpruce**: Boreal Jack Pine-Black Spruce Forest
+  + **X29_AcAp_AlpineTundra**: Acadian-Appalachian Alpine Tundra
+* **sand**: Mean proportion sand composition of soil within point's HUC12 subwatershed (continuous data)
+
+* **silt**: Mean proportion silt composition of soil within point's HUC12 subwatershed (continuous data)
+
+* **slope**: Mean slope (degrees) within point's HUC12 subwatershed (continuous data)
+
+
+# Plot data
+
+
+Remove categorical data and rename variables:
+```{r}
+# Check variables for multicollinearity
+data.num <- as.data.frame(bds[,-c(1,2,30,34,35)]) # remove non-continuous data
+data.num.names <- c("Clay",
+                    "Coast",
+                    "Elevation",
+                    "pH",
+                    "Water", 
+                    "Barren", 
+                    "LAc Northern Hardwoods", 
+                    "NAtl Coast Plain Hardwood",
+                    "LAc Northern Pine(-Oak)", 
+                    "LAc Pine-Hemlock-Hardwood",
+                    "CAp Dry Oak-Pine", 
+                    "Ap (Hemlock-)N Hardwood",
+                    "Ac Low-Elev Spruce-Fir-Hardwood",
+                    "AcAp Montane Spruce-Fir",
+                    "CAp Pine-Oak Rocky Wd", 
+                    "NAtl Coast Plain Maritime",
+                    "NAtl Coast Plain Dune",
+                    "CentIntAp Floodplain Sys",
+                    "CentIntAp Riparian Sys",
+                    "LAc Floodplain Sys", 
+                    "Bor Acidic Peat Sys", 
+                    "CInt and Ap Swamp Sys", 
+                    "Gulf/Atl Coast Plain Swamp Sys",
+                    "Gulf/Atl Coast Pl,in TMarsh Sys",
+                    "LAc Shrub-Herb Wetl Sys", 
+                    "NCentInt Wet Flatwoods",
+                    "LAc Swamp Sys",
+                    "NInt Pine Barrens", 
+                    "AcAp Wd/Heath-Krummholz",
+                    "Bor Jack Pine-Black Spruce",
+                    "AcAp Alpine Tundra", 
+                    "Sand",
+                    "Silt",
+                    "Slope") # make land cover class names shorter
+colnames(data.num) <- data.num.names
+corr <- cor(data.num, method = "pearson")
+# head(corr)
+```
+
+Plot correlogram:
+```{r,fig.width=10,fig.height=10}
+corrplot <- corrplot(corr, 
+                     type="lower",
+                     method="color",
+                     diag = FALSE,
+                     order="FPC",
+                     pch.col = "black",
+                     pch.cex = 1,
+                     tl.col="black",
+                     tl.cex=1,
+                     tl.srt = 45,
+                     col = COL2(diverging = "RdYlBu"))
+```
+
