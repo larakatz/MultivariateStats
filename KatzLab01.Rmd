@@ -13,9 +13,9 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r, message=FALSE}
+Load libraries:
+```{r}
 library(terra)
-library(ggplot2)
 library(corrplot)
 ```
 
@@ -24,8 +24,8 @@ library(corrplot)
 
 
 ```{r}
-bds <- read.csv("./Data/Katz_BDS_data.csv")
-bds <- bds[,-1] # remove first column
+bds <- read.csv("./Data/Katz_BDS_data.csv", header = TRUE, row.names = 1) # Bridle shiner (BDS) data
+bds <- bds[,-2] # remove 'ID' column (not informative, left over from random point generation)
 ```
 
 
@@ -46,7 +46,7 @@ Columns of dataset:
 
 * **catchment**: Catchment position (stream size or size of largest input stream into lake/pond) (categorical data)
 
-* **clay**: Mean proportion clay composition of soil within point's HUC12 subwatershed (continuous data) 
+* **clay**: Mean clay composition (g/kg) of soil within point's HUC12 subwatershed (continuous data) 
 
 * **coast**: Distance from the coastline in km (continuous data)
 
@@ -56,9 +56,9 @@ Columns of dataset:
 
 * **marine**: Whether or not point is within the historic marine limit (binary data)
 
-* **ph**: Mean pH of soil within point's HUC12 subwatershed (continuous data) 
+* **ph**: Mean pH (*10) of soil within point's HUC12 subwatershed (continuous data) 
 
-* Columns **X01_water** through **X29_AcAp_AlpineTundra**: Percent cover of the LANDFIRE landcover type within the point's HUC12 subwatershed (continuous data)
+* Columns **X01_water** through **X29_AcAp_AlpineTundra**: Proportion of the LANDFIRE (https://www.landfire.gov/) Biophysical Settings landcover type within the point's HUC12 subwatershed (continuous data)
   + **X01_water**: Open Water
   + **X02_Barren**: Barren-Rock/Sand/Clay
   + **X03_LAc_NHardwd**: Laurentian-Acadian Northern Hardwoods Forest
@@ -86,9 +86,9 @@ Columns of dataset:
   + **X27_AcAp_WdHeath.Krummholz**: Acadian-Appalachian Subalpine Woodland and Heath-Krummholz
   + **X28_Bor_JackPine.BlackSpruce**: Boreal Jack Pine-Black Spruce Forest
   + **X29_AcAp_AlpineTundra**: Acadian-Appalachian Alpine Tundra
-* **sand**: Mean proportion sand composition of soil within point's HUC12 subwatershed (continuous data)
+* **sand**: Mean proportion sand composition (g/kg) of soil within point's HUC12 subwatershed (continuous data)
 
-* **silt**: Mean proportion silt composition of soil within point's HUC12 subwatershed (continuous data)
+* **silt**: Mean proportion silt composition (g/kg) of soil within point's HUC12 subwatershed (continuous data)
 
 * **slope**: Mean slope (degrees) within point's HUC12 subwatershed (continuous data)
 
@@ -98,8 +98,7 @@ Columns of dataset:
 
 Remove categorical data and rename variables:
 ```{r}
-# Check variables for multicollinearity
-data.num <- as.data.frame(bds[,-c(1,2,30,34,35)]) # remove non-continuous data
+data.num <- as.data.frame(bds[,-c(1,2,6,7)]) # remove non-continuous data
 data.num.names <- c("Clay",
                     "Coast",
                     "Elevation",
@@ -135,21 +134,22 @@ data.num.names <- c("Clay",
                     "Silt",
                     "Slope") # make land cover class names shorter
 colnames(data.num) <- data.num.names
-corr <- cor(data.num, method = "pearson")
+
+corr <- cor(data.num, method = "pearson") # Check variables for multicollinearity
 # head(corr)
 ```
 
 Plot correlogram:
 ```{r,fig.width=10,fig.height=10}
 corrplot <- corrplot(corr, 
-                     type="lower",
-                     method="color",
+                     type = "lower",
+                     method = "color",
                      diag = FALSE,
-                     order="FPC",
+                     order = "FPC",
                      pch.col = "black",
                      pch.cex = 1,
-                     tl.col="black",
-                     tl.cex=1,
+                     tl.col = "black",
+                     tl.cex = 1,
                      tl.srt = 45,
                      col = COL2(diverging = "RdYlBu"))
 ```
