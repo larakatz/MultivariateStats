@@ -7,7 +7,9 @@ output:
   pdf_document: default
 ---
 
-```{r setup, include=FALSE}
+# Lab 1
+
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -18,7 +20,7 @@ library(corrplot)
 ```
 
 
-# Read in multivariate data set
+## Read in multivariate data set
 
 
 ```{r}
@@ -27,7 +29,7 @@ bds <- bds[,-1] # remove first column
 ```
 
 
-# Use the head function to show the first few rows of the dataset
+## Use the head function to show the first few rows of the dataset
 
 
 ```{r}
@@ -35,7 +37,7 @@ head(bds)
 ```
 
 
-# Bulleted list describing the columns of the dataset
+## Bulleted list describing the columns of the dataset
 
 
 Columns of dataset:
@@ -91,7 +93,7 @@ Columns of dataset:
 * **slope**: Mean slope (degrees) within point's HUC12 subwatershed (continuous data)
 
 
-# Plot data
+## Plot data
 
 
 Remove categorical data and rename variables:
