@@ -95,6 +95,7 @@ lines(lowess(eigenvalues))
 ```
 
 ## Question 2: How many axes should you keep? (15 pts)
+3-4 axes
 
 \newline
 
@@ -114,7 +115,7 @@ Another way to plot:
 ```{r}
 ?orditorp
 
-ordiplot(scores(wcmd)[,c(1,2)], type="t",cex=1, main="Hawaiian Bird PCoA")
+ordiplot(vegan::scores(wcmd)[,c(1,2)], type="t",cex=1, main="Hawaiian Bird PCoA")
 abline(h=0,lty=3)
 abline(v=0,lty=3)
 
@@ -122,10 +123,13 @@ abline(v=0,lty=3)
 ?wascores
 
 species<-wascores(wcmd$points[,1:2],birds)
+species
 #text(species,rownames(species),cex=.7, col="red")
-orditorp(species,display='species',labels=rownames(species), col='lightblue')
+orditorp(species,display='species',labels=rownames(species), col='blue') # no scores for PCoA
 ```
 ## Question 3: What species is most associated with the island of Hawaii? (15 pts)
+*Loxops coccineus* is most associated with the island of Hawaii.
+
 
 \newline
 
@@ -202,11 +206,14 @@ You are going to use the metaMDS function in the vegan package. K = 2 because we
 ?metaMDS
 
 nmdsBird<-metaMDS(jbirds2,k=2, trace=T)
+nmdsBird
 stressplot(nmdsBird)
 ```
+*The nonmetric fit is based on stress S and defined as R2 = 1-SxS. The “linear fit” is the squared correlation between fitted values and ordination distances.* 
 
 ## Question 4: What do the stress value and the fit (R2) of the monotonic regression tell you about the NMDS plot? (15 pts)
 
+The final stress value of 0.13 tells us that the ordination represented the data fairly well (stress = 0.1-0.2) in two dimensions. Adding a third axis would likely reduce stress by capturing more of the variation in the data. The linear fit between the ordination distances and fitted values is  
 \newline
 
 Let’s plot out our results and see if there is a difference between the historical and current Hawaiian bird assemblages?
@@ -219,17 +226,19 @@ treat=as.matrix(c(rep("Historical",6),rep("Current",6)))
 #Plot out the points (islands):
 
 ordiplot(nmdsBird,type="n",xlim=c(-.5,.5),ylim=c(-.5,.5))
-orditorp(nmdsBird,display="sites",col=c(rep("green",6),rep("blue",6)),air=0.01,cex=1.25)
+orditorp(nmdsBird,display="sites",col=c(rep("forestgreen",6),rep("blue",6)),air=0.01,cex=1.25)
 legend(-.55,.5, c("Historical","Current"), cex=0.8, 
-col=c("green","blue"), pch=15:15)
+col=c("forestgreen","blue"), pch=15:15)
 
 #Add an ellipse representing the standard error around each group:
 
-ordiellipse(nmdsBird, treat, display="si",lty=1, col="green", show.groups="Historical", kind='se')
+ordiellipse(nmdsBird, treat, display="si",lty=1, col="forestgreen", show.groups="Historical", kind='se')
 ordiellipse(nmdsBird, treat, display="si", lty=1, col="blue", show.groups="Current",kind='se')
 
 ```
 ## Question 5: Are the historic and current bird distributions on the islands statistically different? Why? (15 pts)
+
+The historic and current bird distributions are different because the standard errors of the group centroids don't overlap, but the NMDS cannot tell us if the groups are statistically different.
 
 ## Question 6: Does your personal data set for class meet the assumptions of either PCoA or NMDS? (25 pts)
 
