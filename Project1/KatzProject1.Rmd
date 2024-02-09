@@ -1,0 +1,153 @@
+---
+title: "Project 1"
+author: "Lara Katz"
+date: "2024-02-09"
+output: word_document
+---
+
+
+```{r setup}
+library(knitr)
+opts_chunk$set(echo = TRUE, tidy = TRUE)
+```
+
+Load libraries
+```{r, message=FALSE}
+library(vegan)
+library(MVA)
+library(psych)
+library(Hmisc)
+library(vegan)
+library(StatMatch)
+library(MASS)
+library(tidyverse)
+library(MVN) # Mardia's test
+library(mvnormtest)
+library(raster)
+library(cluster)
+```
+
+# Principal Components Analysis (PCA) of the Darlingtonia data set using the R function `princomp.` 
+
+Load data:
+```{r}
+dar <- read.csv("./Darlingtonia.csv", header = TRUE, row.names = 1)
+```
+
+## Data screening
+
+```{r}
+describeBy(dar)
+```
+
+Look for NA values:
+```{r}
+describe(dar)
+```
+
+Check for multivariate normality:
+```{r}
+mshapiro.test(t(dar))
+```
+
+Mardia test:
+```{r}
+mvn(dar, mvnTest = "mardia")
+```
+`height`, `mouth_diam`, `wing1_length`, `wingsprea`, `hoodarea`, and `tubearea` are normal and do not need to be transformed. `tube_diam`, `keel_diam`, `wing2_length`, and `wingarea` are not normally distributed.
+
+## Data transformation
+
+```{r}
+dar.t <- transform(dar,
+                   height = height,
+                   mouth_diam = mouth_diam,
+                   tube_diam = log1p(tube_diam),
+                   keel_diam = log1p(keel_diam), # still not normal
+                   wing1_length = wing1_length,
+                   wing2_length = log1p(wing2_length), # still not normal
+                   wingsprea = wingsprea,
+                   hoodarea = hoodarea,
+                   wingarea = log1p(wingarea),
+                   tubearea = tubearea)
+
+```
+
+Plot histograms of transformed data to inspect normality:
+```{r}
+par(mfrow=c(2,2))
+hist(as.data.frame(dar.t), main = "keel_diam", xlab = "")
+hist(as.data.frame(dar.t), main = "wing2_length", xlab = "")
+```
+
+## Data standardization
+
+Z-standardization:
+```{r}
+dar.sc <- as.data.frame(scale(dar.t))
+```
+
+
+Check for outliers with `out` function:
+```{r}
+out <- function(x){
+  lier <- x[abs(x)>3]
+  return(lier)
+}
+```
+
+Let’s apply that function:
+
+```{r}
+apply(dar.sc,2,out)
+```
+There are multiple outliers in this dataset. The first 3 columns do not have outliers but the last 7 columns have one or more outliers.
+
+
+Check standardized data for multivariate normality:
+```{r}
+mshapiro.test(t(dar.t))
+```
+
+Mardia test:
+```{r}
+mvn(dar.t, mvnTest = "mardia")
+```
+
+
+1)	Based on a scree plot, how many PCA axes should you retain? (5 points)
+
+2)	Based on the Latent Root Criterion, how many PCA axes should you retain? (5 points)
+
+3)	 What percentage of the total variation in pitcher morphology is accounted for by the first two PCA axes? (5 points)
+
+4)	What 3 variables have the largest loading on PCA 1? (5 points)
+
+5)	What 3 variables have the largest loading on PCA 2? (5 points)
+
+6)	Make a biplot of the first two PCA axes (attach to your submission) (5 points)
+
+7)	In one sentence, how would you describe the morphology of pitcher sample 63? (10 points)
+
+8)	In one sentence, how would you describe the morphology of pitcher sample 75? (10 points)
+
+
+9)	If you could rename each axis in your biplot to describe the variation they explain, what would you name them? (Don’t just pick the name of the variable that has the highest factor loading)? (10 points)
+
+
+10)	Now that you have a handle on variation in pitcher morphology for Darlington, describe a research question you could ask using the PCA axes? (10 points)
+
+
+# Non-metric multi-dimensional (NMDS) analysis of Atlantic and Caribbean island bird communities using the `metaMDS` function in R.
+
+Please answer the following questions based on NMDS of the Atlantic_Caribbean data set. Use the Jaccard index as a distance measure.
+
+11)	What is the stress value for the NMDS of the island bird communities? (5 points)
+
+12)	Based on this stress value, how well does the ordination represent the original distances? (5 points)
+
+13)	Plot the NMDS using 2 axes and color the islands based on their ocean. Attach the plot to your submission. (5 points)
+
+14)	What do the results of your NMDS suggest? (10 points)
+
+15)	Plot the NMDS using 2 axes and color the islands based on their archipelago. Attach the plot to your submission. (5 points)

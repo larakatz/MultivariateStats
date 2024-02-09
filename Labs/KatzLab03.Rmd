@@ -13,8 +13,7 @@ opts_chunk$set(echo = TRUE, tidy = TRUE)
 
 # Set up R session
 
-
-## Download packages 
+## Download packages
 
 Install and load packages
 
@@ -29,7 +28,6 @@ library(tidyverse)
 library(MVN) # Mardia's test
 ```
 
-
 # A primer of matrix algebra
 
 Let’s start by making our own matrix:
@@ -38,6 +36,7 @@ Let’s start by making our own matrix:
 newMatrix <- matrix(c(1,4,5,4,5,6,9,1,9),nrow=3, ncol=3)
 newMatrix
 ```
+
 The command `c` concatenates a list of numbers.
 
 Now let’s check the dimensions of newMatrix:
@@ -48,14 +47,14 @@ dim(newMatrix)
 
 ## Matrix addition and subtraction
 
-## Question 1: Create a new matrix to either add to or subtract from "newMatrix." 
+## Question 1: Create a new matrix to either add to or subtract from "newMatrix."
 
 This new matrix should be a 3 x 3 matrix containing all ones and call it oneMatrix. (15 pts)
+
 ```{r}
 oneMatrix <- matrix(rep(1, times = 9), nrow = 3, ncol = 3)
 oneMatrix
 ```
-
 
 Now add oneMatrix to newMatrix:
 
@@ -63,14 +62,11 @@ Now add oneMatrix to newMatrix:
 newMatrix + oneMatrix
 ```
 
-
-
 Then subtract oneMatrix from newMatrix:
+
 ```{r}
 newMatrix - oneMatrix
 ```
-
-
 
 **Remember, because matrix addition and subtraction is performed on an element by element basis, matrices must have the same dimensions.**
 
@@ -82,11 +78,10 @@ A **Scalar** is a single number. Scalar multiplication multiplies a scalar times
 3*newMatrix
 ```
 
-
 An *eigenvalue* is a scalar that is an essential component of multivariate analysis. We will explore this in a little bit.
 
-
 ## Matrix Multiplication
+
 You use `%` to signify that are using a matrix operation. Otherwise, R will attempt the operation element by element.
 
 ```{r eval=FALSE}
@@ -99,10 +94,7 @@ order matters:
 newMatrix%*%oneMatrix
 ```
 
-
-
 **The number of columns in the first matrix must equal the number of rows in the second matrix.**
-
 
 ## Matrix transposition
 
@@ -113,7 +105,6 @@ transMatrix<-t(newMatrix)
 transMatrix
 ```
 
-
 ## Identity Matrices
 
 An **identity matrix** is a matrix where all the diagonal terms equal one and the remaining elements equal 0:
@@ -122,21 +113,19 @@ An **identity matrix** is a matrix where all the diagonal terms equal one and th
 Identity<-diag(3)
 Identity
 ```
+
 \newline
 
 ## Matrix Inversion
 
-The inverse of matrix A is A-1. 
-
+The inverse of matrix A is A-1.
 
 ```{r}
 invMatrix<-solve(newMatrix)
 invMatrix
 ```
 
-
 Multiplying a matrix by its inverse yields an identity matrix (A x A-1 = I):
-
 
 ```{r eval=FALSE}
 invMatrix%*%newMatrix
@@ -161,8 +150,8 @@ eig
 
 \newline
 
+# Principal Component Analysis (PCA)
 
-#	Principal Component Analysis (PCA)
 You are going to conduct a PCA on the `USairpollution` data that we used in Lab 2.
 
 First let’s call in the data:
@@ -171,17 +160,17 @@ First let’s call in the data:
 usAir <- USairpollution
 ```
 
+Now, look at the distributions (i.e., histograms) of the variables to determine if they need to be transformed. You should be able to make the histograms and transform them based on what you learned during Lab 2.
 
-Now, look at the distributions (i.e., histograms) of the variables to determine if they need to be transformed. You should be able to make the histograms and transform them based on what you learned during Lab 2. 
-
-```{r}
+```{r, message=FALSE}
 par(mfrow=c(2,4))
 for (i in 1:ncol(usAir)){
-  print(hist(usAir[,i], main = colnames(usAir)[i], xlab = ""))
+  hist(usAir[,i], main = colnames(usAir)[i], xlab = "")
 }
 ```
 
 Mardia's test:
+
 ```{r}
 mvn(usAir, mvnTest = "mardia")
 ```
@@ -199,8 +188,9 @@ usAir.t <- transform(usAir,
 head(usAir.t)
 ```
 
-Compare histograms
-```{r}
+Compare histograms:
+
+```{r, message=FALSE}
 par(mfrow=c(2,4))
 for (i in 1:ncol(usAir)){
   hist(usAir[,i], main = colnames(usAir)[i], xlab = "")
@@ -208,8 +198,8 @@ for (i in 1:ncol(usAir)){
 }
 ```
 
-
 ## Question 2: What variable did you transform, and what transformation did you use? (15 pts)
+
 *I transformed `SO2`, `temp`, and `precip` using a log transformation because they are continuous variables. I transformed `manu`, `popul`, and `predays` using a square root transformation because these columns were made up of count data.*
 
 If you do transform any variables, use the transformed data matrix going forward.
@@ -219,11 +209,12 @@ Next, apply a z-score standardization:
 ```{r results='hide'}
 ZusAir <- scale(usAir.t)
 ```
+
 \newline
 
 # Running the PCA:
-You are going to use the package `princomp` function in the stats package. Take some time to read about this function:
 
+You are going to use the package `princomp` function in the stats package. Take some time to read about this function:
 
 ```{r eval=FALSE}
 ?princomp
@@ -234,8 +225,6 @@ Run the princomp function:
 ```{r}
 usAir_pca <- princomp(ZusAir, cor = F)
 ```
-
-
 
 cor = F, because you are using the covariance matrix instead of the correlation matrix.
 
@@ -249,16 +238,14 @@ Let’s look at a summary of our PCA:
 summary(usAir_pca)
 ```
 
-Notice that the summary gives the standard deviation instead of the eigenvalue (variance). Let’s calculate the eigenvalues using what we know about the relationship between standard deviation and variance (var = sd^2):
+Notice that the summary gives the standard deviation instead of the eigenvalue (variance). Let’s calculate the eigenvalues using what we know about the relationship between standard deviation and variance (var = sd\^2):
 
 ```{r}
 eigenVal<- (usAir_pca$sdev*sqrt(41/40))^2
 eigenVal
 ```
 
-
-
-The *sqrt(41/40)* is to correct for the fact that princomp calculates variances with the divisor N instead of N-1 as is customary. This adjustment will allow direct comparison with “hand” calculated eigenvalues using the function `eigen` below. Note that these hand calculations are just to help you understand what is going on 'under the hood' in the model. 
+The *sqrt(41/40)* is to correct for the fact that princomp calculates variances with the divisor N instead of N-1 as is customary. This adjustment will allow direct comparison with “hand” calculated eigenvalues using the function `eigen` below. Note that these hand calculations are just to help you understand what is going on 'under the hood' in the model.
 
 Let’s make the PCA table with the eigenvalues instead of the standard deviations:
 
@@ -269,9 +256,7 @@ pca_Table<-t(rbind(eigenVal,propVar,cumVar))
 pca_Table
 ```
 
-
 **This calculation and table are just to show you that the eigenvalues and the output from `princomp`, the standard deviations, are the same thing. YOU DO NOT NEED TO DO THIS WHEN YOU RUN A PCA - it is just to help you gain a deeper understanding of the model.**
-
 
 the factor loadings from `princomp`:
 
@@ -279,24 +264,21 @@ the factor loadings from `princomp`:
 loadings(usAir_pca)
 ```
 
-
 and the factor scores:
 
 ```{r eval=FALSE}
 scores(usAir_pca)
 ```
 
-
 ## Determining number of axes to keep
 
 You now have 7 PC axes. Which ones give us vital information and which ones can we toss? One method for selecting the number of Axes is a **Scree plot**:
-
 
 ```{r}
 plot(usAir_pca, type="lines")
 ```
 
-How about the **latent root criterion (i.e., keep components with eigenvalues > 1)** and the **relative percent variance criteria**.  Check the summary of the PCA explore this: 
+How about the **latent root criterion (i.e., keep components with eigenvalues \> 1)** and the **relative percent variance criteria**. Check the summary of the PCA explore this:
 
 ```{r}
 eigenVal
@@ -304,15 +286,15 @@ pca_Table
 summary(usAir_pca)
 ```
 
-
-
 ## Question 3: How many axes you should keep and why? (15 points)
 
-\newline
-*I will keep the first four PCA axes because they have eigenvalues > 1 (latent root criterion). Cumulatively, these four axes explain 93.8% of the variation in the data. After PCA4, the scree plot begins to level off.*
+-   *Latent root criterion: This stopping rule drops eigenvalues less than one. Components 5, 6, and 7 would be dropped here, but since there are \< 20 variables this method will keep a conservative number of components.*
+-   *Scree plot criterion: The scree plot criterion indicates the maximum number of components to extract by plotting the eigenvalues against the component number. The scree plot begins to level off after PCA4, so components 1 through 4 should be retained.*
+-   *Relative percent variance criterion: According to this criterion I would keep the first four PCA axes because, cumulatively, they explain 93.8% of the variation in the data. I could also just keep the first three PCA axes if I needed to simplify the results for a secondary model because they explain \> 70% of the variation in the data (79.4%).*
 
 ## Significance of factor loadings.
-While many use the “rule of thumb” where a loading > 0.30 dictates an “important” variable. Another method for determining significance of factor loadings is bootstrapping. Details and comparisons of the many way to assess significance of factor loadings are presented in Peres-Neto et al. (2003), which is supplemental reading for this week. Here we will run the method that they found to have the lowest type I error rates, Bootstrapped eigenvector. For reference, this is the method 6 in Peres-Neto et al. (2003).
+
+While many use the “rule of thumb” where a loading \> 0.30 dictates an “important” variable. Another method for determining significance of factor loadings is bootstrapping. Details and comparisons of the many way to assess significance of factor loadings are presented in Peres-Neto et al. (2003), which is supplemental reading for this week. Here we will run the method that they found to have the lowest type I error rates, Bootstrapped eigenvector. For reference, this is the method 6 in Peres-Neto et al. (2003).
 
 ```{r}
 sigpca2<-function (x, permutations=1000, ...)
@@ -356,6 +338,7 @@ out <- out + ifelse(res > 0, sol <=  0, sol >= 0)
 \newline
 
 ## PCA plots
+
 Plot out the factor loadings for the first 2 PC axes:
 
 ```{r fig.height= 7, fig.width= 7}
@@ -366,11 +349,9 @@ abline(h = 0, lty = 3)
 abline(v = 0, lty = 3)
 ```
 
-
 ## Question 4: How do you interpret these axes? Come up with a name for each. (15 pts)
 
-*PC1 is being driven primarily by population parameters (`manu` and `popul`) and temperature (`temp`).
-PC2 is primarily being driven by precipitation parameters (`predays` and `precip`) and population parameters (`popul` and `manu`).*
+*PCA1 is being driven primarily by population parameters (`manu` and `popul`) and temperature (`temp`). PCA2 is primarily being driven by precipitation parameters (`predays` and `precip`) and population parameters (`popul` and `manu`). I would name PCA1 "Manufacturing-Temperature" and PCA2 "PrecipitationDays-Population."*
 
 **Close the plot window after viewing**
 
@@ -383,7 +364,6 @@ plot(usAir_pca$scores,type="n",xlab="PC 1, 39%", ylab="PC 2, 21%",ylim=c(-2.5,4)
 text(usAir_pca$scores, labels=as.character(rownames(ZusAir)), pos=1, cex=1)
 
 ```
-
 
 \newline
 
@@ -398,7 +378,6 @@ biplot(usAir_pca$scores,usAir_pca$loading,xlab="PC 1, 39%", ylab="PC 2, 21%",exp
 abline(h = 0, lty = 3)
 abline(v = 0, lty = 3)
 ```
-
 
 \newline
 
@@ -421,12 +400,11 @@ eig<-eigen(cov(ZusAir))
 ```
 
 Extract the first two eigenvectors (because that is what we are interested in plotting):
+
 ```{r}
 eigVec<-as.matrix(eig$vectors[,1:2])
 rownames(eigVec) <- rownames(cov(ZusAir))
 ```
-
-
 
 Then simply multiply each eigenvector times the matrix of standardized observation values (ZusAir) and plot!
 
@@ -440,12 +418,12 @@ abline(h = 0, lty = 3)
 abline(v = 0, lty = 3)
 ```
 
-
 ## Question 5: Does your individual dataset (the one used in Lab 2) meet the assumptions of PCA? Is PCA an analysis you could use on your data? (40 pts)
 
-*I cannot use PCA on my data because, even with variable transformations (below), they do not meet the assumption of multivariate normality. The majority of the data points are independent pseudo-absence points generated by `terra`, but the Bridle Shiner survey locations were sampled in person and most were not random. Taking a stratified random sample of the in-person survey locations would allow the data to meet the independent sample assumption. The data do meet some of the data requirements for PCA: There are more samples (n = 10,000) than there are columns (n = 38), which meets the rule of thumb that n > 3x38. The majority of the variables are continuous, three are categorical, and the response variable is binary (I removed the binary response variable when I standardized the data). Every sample entity is measured for the same set of variables and there are no NA values.* 
+*I cannot use PCA on my data because, even with variable transformations (below), they do not meet the assumption of multivariate normality. The majority of the data points are independent pseudo-absence points generated by `terra`, but the Bridle Shiner survey locations were sampled in person and most were not random (i.e., spatial autocorrelation). Taking a stratified random sample of the in-person survey locations would allow the data to meet the independent sample assumption. The data do meet some of the data requirements for PCA: There are more samples (n = 10,000) than there are columns (n = 38), which meets the rule of thumb that n $\geq$ 3x38. The majority of the variables are continuous, three are categorical, and the response variable is binary (I removed the binary response variable when I standardized the data). Every sample entity is measured for the same set of variables and there are no NA values.*
 
 Read in dataset and define data types:
+
 ```{r}
 bds <- read.csv("./Data/Katz_BDS_data.csv", header = TRUE, row.names = 1)
 bds <- bds[,-2]
@@ -456,6 +434,7 @@ bds$ph <- bds$ph/10 # convert integer raster values back to pH scale
 ```
 
 Convert proportional data to percentages between 0 and 1:
+
 ```{r, results='hide'}
 for (i in 9:35){ # proportion of HUC12 covered by LANDFIRE cover class
   bds[,i] <- bds[,i]/100 # convert to percentages between 0 and 1
@@ -464,6 +443,7 @@ summary(bds[,9:35])
 ```
 
 Transform data based on data type (log-transformation for continuous, arcsine square root for percentages):
+
 ```{r}
 bds.t <- transform(bds,
                    pab = pab,                         # binary response, no transformation
@@ -509,14 +489,16 @@ bds.t <- (bds.t[,-c(9:35)]) # remove original columns
 ```
 
 Scale data:
+
 ```{r}
 require(tidyverse)
 bds.num <- bds.t %>% select(-pab, -catchment, -lith, -marine)
 scaledData <- scale(bds.num)
 ```
 
-Look at histgrams:
-```{r}
+Look at histograms:
+
+```{r, message=FALSE}
 par(mfrow=c(2,4))
 for (i in 1:ncol(bds.num)){
   hist(scaledData[,i], main = colnames(bds.num)[i], xlab = "")
@@ -524,7 +506,7 @@ for (i in 1:ncol(bds.num)){
 ```
 
 Mardia's test for multivariate normality (scaled data):
+
 ```{r}
 mvn(scaledData, mvnTest = "mardia")
 ```
-
