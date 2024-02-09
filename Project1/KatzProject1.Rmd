@@ -15,7 +15,7 @@ Load libraries
 ```{r, message=FALSE}
 library(vegan)
 library(MVA)
-library(psych)
+library(psych) # describeBy function
 library(Hmisc)
 library(vegan)
 library(StatMatch)
@@ -25,6 +25,7 @@ library(MVN) # Mardia's test
 library(mvnormtest)
 library(raster)
 library(cluster)
+library(viridis)
 ```
 
 # Principal Components Analysis (PCA) of the Darlingtonia data set using the R function `princomp.` 
@@ -75,9 +76,8 @@ dar.t <- transform(dar,
 
 Plot histograms of transformed data to inspect normality:
 ```{r}
-par(mfrow=c(2,2))
-hist(as.data.frame(dar.t), main = "keel_diam", xlab = "")
-hist(as.data.frame(dar.t), main = "wing2_length", xlab = "")
+par(mfrow=c(1,2))
+hist(as.data.frame(dar.t), main = colnames(dar.t), xlab = "")
 ```
 
 ## Data standardization
@@ -87,6 +87,11 @@ Z-standardization:
 dar.sc <- as.data.frame(scale(dar.t))
 ```
 
+Plot histograms:
+```{r}
+par(mfrow=c(1,1))
+hist(as.data.frame(dar.sc), main = colnames(dar.sc), xlab = "")
+```
 
 Check for outliers with `out` function:
 ```{r}
@@ -94,11 +99,7 @@ out <- function(x){
   lier <- x[abs(x)>3]
   return(lier)
 }
-```
 
-Let’s apply that function:
-
-```{r}
 apply(dar.sc,2,out)
 ```
 There are multiple outliers in this dataset. The first 3 columns do not have outliers but the last 7 columns have one or more outliers.
@@ -106,48 +107,249 @@ There are multiple outliers in this dataset. The first 3 columns do not have out
 
 Check standardized data for multivariate normality:
 ```{r}
-mshapiro.test(t(dar.t))
+mshapiro.test(t(dar.sc))
 ```
 
 Mardia test:
 ```{r}
-mvn(dar.t, mvnTest = "mardia")
+mvn(dar.sc, mvnTest = "mardia")
 ```
 
+## Running the PCA
 
-1)	Based on a scree plot, how many PCA axes should you retain? (5 points)
+Run the `princomp` function:
+```{r}
+dar_pca <- princomp(dar.sc, cor = F)
+```
 
-2)	Based on the Latent Root Criterion, how many PCA axes should you retain? (5 points)
+Calculate eigenvalues:
+```{r}
+n <- nrow(dar.sc)
+eigenVal<- (dar_pca$sdev*sqrt(n/(n-1)))^2 # n/(n-1) correction because princomp calculates variances with the divisor N
+eigenVal
+```
 
-3)	 What percentage of the total variation in pitcher morphology is accounted for by the first two PCA axes? (5 points)
+Make the PCA table with the eigenvalues instead of the standard deviations:
+```{r}
+propVar <- eigenVal/sum(eigenVal)
+cumVar <- cumsum(propVar)
+pca_Table <- t(rbind(eigenVal,propVar,cumVar))
+pca_Table
+```
 
-4)	What 3 variables have the largest loading on PCA 1? (5 points)
+## Determining number of axes to keep
 
-5)	What 3 variables have the largest loading on PCA 2? (5 points)
+Scree plot:
+```{r}
+plot(dar_pca, type="lines")
+```
 
-6)	Make a biplot of the first two PCA axes (attach to your submission) (5 points)
+### Question 1: Based on a scree plot, how many PCA axes should you retain? (5 points)
 
-7)	In one sentence, how would you describe the morphology of pitcher sample 63? (10 points)
+I would keep the first 4 PCA axes because the scree plot begins to level off after PCA4.
 
-8)	In one sentence, how would you describe the morphology of pitcher sample 75? (10 points)
+### Question 2: Based on the Latent Root Criterion, how many PCA axes should you retain? (5 points)
+
+I would keep the first 3 PCA axes based on the Latent Root Criterion because the eigenvalues of these three components are greater than 1. PCA4-10 have eigenvalues less than 1.
+
+### Question 3: What percentage of the total variation in pitcher morphology is accounted for by the first two PCA axes? (5 points)
+
+The first two PCA axes have a cumulative variation of 0.697 and therefore account for 69.7% of the total variation in pitcher morphology. 
+
+Factor loadings from `princomp`:
+```{r}
+loadings(dar_pca)
+```
+
+Factor scores:
+```{r eval=FALSE}
+scores(dar_pca)
+```
+
+### Question 4: What 3 variables have the largest loading on PCA 1? (5 points)
+
+`wingarea`, `hoodarea`, and `wing1_length` have the largest loading on PCA1.
+
+### Question 5: What 3 variables have the largest loading on PCA 2? (5 points)
+
+`tube_diam`, `tube_area`, and `keel_diam` have the largest loading on PCA2.
+
+### Question 6:	Make a biplot of the first two PCA axes (attach to your submission) (5 points)
+
+```{r}
+plot(dar_pca$loadings,type="n",xlab="PC 1, 47%", ylab="PC 2, 22%",ylim=c(-.8,.8), xlim=c(-.6,.6))
+
+text(dar_pca$loadings, labels=as.character(colnames(dar.sc)), pos=1, cex=1)
+abline(h = 0, lty = 3)
+abline(v = 0, lty = 3)
+```
+
+### Question 7: In one sentence, how would you describe the morphology of pitcher sample 63? (10 points)
+
+```{r}
+dar.sc[63,]
+```
+Pitcher sample 63 has smaller than average measurements for all measured variables, but none of these measurements are outliers (all are < 3 standard deviations from the mean). 
 
 
-9)	If you could rename each axis in your biplot to describe the variation they explain, what would you name them? (Don’t just pick the name of the variable that has the highest factor loading)? (10 points)
+### Question 8: In one sentence, how would you describe the morphology of pitcher sample 75? (10 points)
 
+```{r}
+dar.sc[75,]
+```
+This pitcher plant sample has larger than average measurements for all measured variables, and has an exceptionally large `tubearea` and `hoodarea` (values > 3 standard deviations from the mean).
 
-10)	Now that you have a handle on variation in pitcher morphology for Darlington, describe a research question you could ask using the PCA axes? (10 points)
+### Question 9: If you could rename each axis in your biplot to describe the variation they explain, what would you name them? (Don’t just pick the name of the variable that has the highest factor loading)? (10 points)
+
+```{r}
+loadings(dar_pca)
+```
+PC1 seems to be primarily influenced by the overall size of the plant, with `wingarea` and `tubearea` driving positive values along the axis. PC2 seems to be primarily influenced by `tube_diam` and `keel_diam`. I would call PC1 "Area" and PC2 "Diameter."
+
+### Question 10: Now that you have a handle on variation in pitcher morphology for Darlington, describe a research question you could ask using the PCA axes? (10 points)
 
 
 # Non-metric multi-dimensional (NMDS) analysis of Atlantic and Caribbean island bird communities using the `metaMDS` function in R.
 
 Please answer the following questions based on NMDS of the Atlantic_Caribbean data set. Use the Jaccard index as a distance measure.
 
-11)	What is the stress value for the NMDS of the island bird communities? (5 points)
+Load data:
+```{r}
+bird <- read.csv("./Atlantic_Caribbean.csv", header = TRUE, row.names = 1)
+head(bird)
+```
 
-12)	Based on this stress value, how well does the ordination represent the original distances? (5 points)
+Fix island names where the accent mark didn't upload: 
+```{r}
+bird[bird$Island.Name == "Monta\xf1a.Clara",]$Island.Name <- "Montana.Clara"
+bird[bird$Island.Name == "San.Ant\xe3o",]$Island.Name <- "San.Antao"
+bird$Island.Name
+length(unique(bird$Island.Name)) # is each island only surveyed once?
+```
+Change row names to those of the islands:
+```{r}
+rownames(bird) <- bird$Island.Name
+bird <- bird[,-3]
+head(bird)
+```
 
-13)	Plot the NMDS using 2 axes and color the islands based on their ocean. Attach the plot to your submission. (5 points)
+Change categorical variables to factors:
+```{r}
+bird$Archipelago <- as.factor(bird$Archipelago)
+bird$Ocean <- as.factor(bird$Ocean)
+```
 
-14)	What do the results of your NMDS suggest? (10 points)
+## Data screening
 
-15)	Plot the NMDS using 2 axes and color the islands based on their archipelago. Attach the plot to your submission. (5 points)
+```{r}
+describeBy(bird)
+```
+
+Look for NA values:
+```{r, eval = FALSE}
+describe(bird)
+```
+
+
+## Distance calculation
+
+Separate categorical group data from bird presence-absence data:
+```{r}
+bird.groups <- bird[,1:2]
+bird.pres <- bird[,3:383]
+```
+
+```{r}
+bird.j <- vegdist(bird.pres, "jaccard")
+```
+
+## NMDS
+
+```{r}
+nmdsBird <- metaMDS(bird.j, k=2, trace=T)
+nmdsBird
+```
+Shepard diagram:
+```{r}
+stressplot(nmdsBird)
+```
+
+
+### Question 11: What is the stress value for the NMDS of the island bird communities? (5 points)
+
+### Question 12: Based on this stress value, how well does the ordination represent the original distances? (5 points)
+
+### Question 13: Plot the NMDS using 2 axes and color the islands based on their ocean. Attach the plot to your submission. (5 points)
+
+```{r}
+bird.groups$Ocean # what order are the islands in?
+
+n.Atl <- nrow(bird.groups[bird.groups$Ocean == "Atlantic",])
+n.Car <- nrow(bird.groups[bird.groups$Ocean == "Caribbean",])
+```
+
+Repeat oceans and colors:
+```{r}
+oceans <- factor(c(rep("Atlantic", n.Atl),rep("Caribbean", n.Car)))
+cols <- c("darkblue","cyan4")
+colors <- cols[oceans] # only works because the factor names and the data are both in alphabetical order
+colors
+```
+
+Plot out the points (islands):
+```{r}
+ordiplot(nmdsBird, type="n")
+orditorp(nmdsBird, display="sites", col=colors, air=0.01, cex=0.8)
+legend(4,2.8, c("Atlantic","Caribbean"), cex=0.8, 
+col=c("darkblue","cyan4"), pch=15:15)
+abline(h = 0, lty = 3)
+abline(v = 0, lty = 3)
+```
+
+
+### Question 14: What do the results of your NMDS suggest? (10 points)
+
+### Question 15: Plot the NMDS using 2 axes and color the islands based on their archipelago. Attach the plot to your submission. (5 points)
+
+```{r}
+levels(bird.groups$Archipelago) # what archipelagos are there?
+bird.groups$Archipelago # what order are they in?
+```
+
+
+```{r}
+n.Can <- nrow(bird.groups[bird.groups$Archipelago == "Canaries",])
+n.CapV <- nrow(bird.groups[bird.groups$Archipelago == "CapeVerdes",])
+n.Az <- nrow(bird.groups[bird.groups$Archipelago == "Azores",])
+n.Mad <- nrow(bird.groups[bird.groups$Archipelago == "Madeira",])
+n.GAnt <- nrow(bird.groups[bird.groups$Archipelago == "GreaterAntilles",])
+n.LAnt <- nrow(bird.groups[bird.groups$Archipelago == "LesserAntilles",])
+n.Cay <- nrow(bird.groups[bird.groups$Archipelago == "Caymans",])
+```
+
+Repeat archipelagos and colors:
+```{r}
+require(viridis)
+
+#palette <- c(rocket(4, begin = 0.10, end = 0.80), mako(3, begin = 0.30, end = 0.70))
+palette <- c(turbo(4, end = 0.35), turbo(3, begin = 0.70))
+archs <- c(rep(palette[1], n.Can), 
+           rep(palette[2], n.CapV), 
+           rep(palette[3], n.Az),
+           rep(palette[4], n.Mad),
+           rep(palette[5], n.GAnt),
+           rep(palette[6], n.LAnt),
+           rep(palette[7], n.Cay))
+archs
+```
+
+Plot out the points (islands):
+```{r}
+ordiplot(nmdsBird, type="n")
+orditorp(nmdsBird, display="sites", col=archs, air=0.1, cex=0.8)
+legend(-5.5,.4, c("Canaries","Cape Verdes", "Azores", "Madeira","Greater Antilles", 
+                "Lesser Antilles", "Caymans"), cex=0.8,
+       col = palette, 
+       pch=15:15)
+
+```
